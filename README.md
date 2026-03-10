@@ -104,294 +104,142 @@ Sequelize provides `sync()` methods to align your model definitions with the act
 | `User.sync({ force: true })` | **Drops** the existing table and recreates it from scratch |
 | `User.sync({ alter: true })` | **Inspects** the current table state and applies only the necessary changes to match the model |
 
-# 📝 Todo REST API
 
-A simple, fully-typed REST API for managing todos — built with **Express**, **Sequelize**, and **Zod** schema validation.
 
----
 
-## 📁 Project Structure
 
-```
-├── controllers/
-│   └── todo.controller.ts       # Route handlers
-├── models/
-│   └── todo.model.ts            # Sequelize model
-├── schemas/
-│   └── todo.schema.ts           # Zod validation schemas
-├── utils/
-│   ├── apiResponse.ts           # Standardized success responses
-│   └── apiError.ts              # Standardized error responses
-└── routes/
-    └── todo.routes.ts           # Express router
+# Sequelize CLI — Setup & Migrations Guide
+
+## 1. Install Dependencies
+
+```bash
+npm install sequelize mysql2 dotenv
+npm install --save-dev sequelize-cli
 ```
 
 ---
 
-## 🚀 Base URL
+## 2. Create `.sequelizerc`
 
-```
-/api/todos
-```
+In your project root, create a `.sequelizerc` file to define folder paths:
 
----
+```js
+const path = require("path");
 
-## 📦 Data Model
-
-| Field         | Type      | Description                        |
-|---------------|-----------|------------------------------------|
-| `id`          | `number`  | Auto-incremented primary key       |
-| `Title`       | `string`  | Title of the todo (required)       |
-| `Description` | `string`  | Optional description               |
-| `IsCompleted` | `boolean` | Completion status (default: false) |
-| `DateCreated` | `Date`    | Timestamp when created             |
-| `DateUpdated` | `Date`    | Timestamp of last update           |
-
----
-
-## 📡 Endpoints
-
----
-
-### `GET /api/todos`
-> Retrieve all todos.
-
-**Response `200 OK`**
-```json
-{
-  "status": 200,
-  "message": "Todos retrieved successfully",
-  "data": [
-    {
-      "id": 1,
-      "Title": "Buy groceries",
-      "Description": "Milk, eggs, bread",
-      "IsCompleted": false,
-      "DateCreated": "2026-03-10T08:00:00.000Z",
-      "DateUpdated": "2026-03-10T08:00:00.000Z"
-    }
-  ]
-}
+module.exports = {
+  config:            path.resolve("config", "config.cjs"),
+  "models-path":     path.resolve("models"),
+  "seeders-path":    path.resolve("seeders"),
+  "migrations-path": path.resolve("migrations"),
+};
 ```
 
 ---
 
-### `POST /api/todos`
-> Create a new todo.
+## 3. Configure Database (`config/config.cjs`)
 
-**Request Body**
+```js
+require("dotenv").config({ path: "config.env" });
 
-| Field         | Type     | Required | Constraints          |
-|---------------|----------|----------|----------------------|
-| `Title`       | `string` | ✅ Yes   | 1–255 characters     |
-| `Description` | `string` | ❌ No    | —                    |
-
-**Example Request**
-```json
-{
-  "Title": "Buy groceries",
-  "Description": "Milk, eggs, bread"
-}
+module.exports = {
+  development: {
+    username: process.env.DATABASE_USER,
+    password: process.env.DATABASE_PASSWORD,
+    database: process.env.DATABASE_NAME,
+    host: "127.0.0.1",
+    dialect: "mysql",
+  },
+};
 ```
 
-**Response `201 Created`**
-```json
-{
-  "status": 201,
-  "message": "Todo created successfully",
-  "data": {
-    "id": 1,
-    "Title": "Buy groceries",
-    "Description": "Milk, eggs, bread",
-    "IsCompleted": false,
-    "DateCreated": "2026-03-10T08:00:00.000Z",
-    "DateUpdated": "2026-03-10T08:00:00.000Z"
-  }
-}
+
+## 5. Initialize Sequelize
+
+```bash
+npx sequelize init
 ```
+
+This creates the `models/`, `migrations/`, and `seeders/` folders.
 
 ---
 
-### `GET /api/todos/:id`
-> Retrieve a single todo by its ID.
+## 6. Migrations
 
-**Path Parameters**
+### Generate a migration
+```bash
+npx sequelize migration:generate --name <migration-name>
+```
 
-| Parameter | Type     | Description              |
-|-----------|----------|--------------------------|
-| `id`      | `number` | Must be a valid integer  |
+### Run all pending migrations
+```bash
+npx sequelize db:migrate
+```
 
-**Response `200 OK`**
-```json
-{
-  "status": 200,
-  "message": "Todo retrieved successfully",
-  "data": {
-    "id": 1,
-    "Title": "Buy groceries",
-    "Description": "Milk, eggs, bread",
-    "IsCompleted": false,
-    "DateCreated": "2026-03-10T08:00:00.000Z",
-    "DateUpdated": "2026-03-10T08:00:00.000Z"
-  }
-}
+### Undo migrations
+```bash
+npx sequelize db:migrate:undo                          # undo last
+npx sequelize db:migrate:undo --name <migration-name> # undo specific
+npx sequelize db:migrate:undo:all                      # undo all
 ```
 
 ---
 
-### `PUT /api/todos/:id`
-> Update an existing todo by its ID. All body fields are optional.
+## 7. Example — Create Table Migration
 
-**Path Parameters**
+```js
+// migrations/XXXXXX-create-todos.js
+"use strict";
 
-| Parameter | Type     | Description              |
-|-----------|----------|--------------------------|
-| `id`      | `number` | Must be a valid integer  |
+module.exports = {
+  async up(queryInterface, Sequelize) {
+    await queryInterface.createTable("TodosfromMigration", {
+      id:          { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false },
+      Title:       { type: Sequelize.STRING, allowNull: false },
+      Description: { type: Sequelize.STRING, allowNull: true },
+      IsCompleted: { type: Sequelize.BOOLEAN, allowNull: true, defaultValue: false },
+      CreatedAt:   { type: Sequelize.DATE, allowNull: false },
+      UpdatedAt:   { type: Sequelize.DATE, allowNull: false },
+    });
+  },
 
-**Request Body** *(all fields optional)*
-
-| Field         | Type      | Constraints                               |
-|---------------|-----------|-------------------------------------------|
-| `Title`       | `string`  | Non-empty if provided, max 255 characters |
-| `Description` | `string`  | —                                         |
-| `IsCompleted` | `boolean` | `true` or `false`                         |
-
-**Example Request**
-```json
-{
-  "Title": "Updated title",
-  "IsCompleted": true
-}
-```
-
-**Response `200 OK`**
-```json
-{
-  "status": 200,
-  "message": "Todo updated successfully",
-  "data": {
-    "id": 1,
-    "Title": "Updated title",
-    "Description": "Milk, eggs, bread",
-    "IsCompleted": true,
-    "DateCreated": "2026-03-10T08:00:00.000Z",
-    "DateUpdated": "2026-03-10T09:30:00.000Z"
-  }
-}
+  async down(queryInterface) {
+    await queryInterface.dropTable("TodosfromMigration");
+  },
+};
 ```
 
 ---
 
-### `DELETE /api/todos/:id`
-> Delete a todo by its ID.
+## 8. Example — Add Column Migration
 
-**Path Parameters**
+```js
+// migrations/XXXXXX-addVerification.js
+"use strict";
 
-| Parameter | Type     | Description              |
-|-----------|----------|--------------------------|
-| `id`      | `number` | Must be a valid integer  |
+module.exports = {
+  async up(queryInterface, Sequelize) {
+    await queryInterface.addColumn("TodosfromMigration", "Verified", {
+      type: Sequelize.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    });
+  },
 
-**Response `200 OK`**
-```json
-{
-  "status": 200,
-  "message": "Todo deleted successfully",
-  "data": null
-}
+  async down(queryInterface) {
+    await queryInterface.removeColumn("TodosfromMigration", "Verified");
+  },
+};
 ```
 
 ---
 
-## ❌ Error Responses
+## Quick Reference
 
-All errors follow a consistent response shape.
-
----
-
-### `400` — Validation Error
-Returned when the request body or path params fail Zod schema validation.
-
-```json
-{
-  "status": 400,
-  "message": "Validation failed",
-  "errors": [
-    {
-      "field": "Title",
-      "message": "Title is required"
-    }
-  ]
-}
-```
-
----
-
-### `404` — Not Found
-Returned when no todo matches the given ID.
-
-```json
-{
-  "status": 404,
-  "message": "Todo not found"
-}
-```
-
----
-
-### `500` — Internal Server Error
-Returned on unexpected failures.
-
-```json
-{
-  "status": 500,
-  "message": "Failed to retrieve todos"
-}
-```
-
----
-
-## ✅ Validation Rules
-
-| Field              | Rule                                          |
-|--------------------|-----------------------------------------------|
-| `id` (path param)  | Must match `/^\d+$/` — numeric string only    |
-| `Title` (create)   | Required, 1–255 characters                    |
-| `Title` (update)   | Optional; if provided, non-empty, max 255 chars |
-| `Description`      | Optional string, no length constraint         |
-| `IsCompleted`      | Optional boolean — `true` or `false` only     |
-
----
-
-## 🔷 Zod Schemas
-
-```typescript
-// Create Todo
-const createTodoSchema = z.object({
-  Title: z.string().min(1).max(255),
-  Description: z.string().optional(),
-});
-
-// Update Todo
-const updateTodoSchema = z.object({
-  Title: z.string().min(1).max(255).optional(),
-  Description: z.string().optional(),
-  IsCompleted: z.boolean().optional(),
-});
-
-// ID Param
-const todoIdSchema = z.object({
-  id: z.string().regex(/^\d+$/),
-});
-```
-
----
-
-## 📊 Quick Reference
-
-| Method   | Endpoint          | Description        | Body Required |
-|----------|-------------------|--------------------|---------------|
-| `GET`    | `/api/todos`      | Get all todos      | —             |
-| `POST`   | `/api/todos`      | Create a todo      | ✅ Yes         |
-| `GET`    | `/api/todos/:id`  | Get todo by ID     | —             |
-| `PUT`    | `/api/todos/:id`  | Update todo by ID  | ❌ Optional    |
-| `DELETE` | `/api/todos/:id`  | Delete todo by ID  | —             |
+| Task                | Command                                           |
+|---------------------|---------------------------------------------------|
+| Install CLI         | `npm install --save-dev sequelize-cli`            |
+| Init project        | `npx sequelize init`                              |
+| Generate migration  | `npx sequelize migration:generate --name <name>`  |
+| Run migrations      | `npx sequelize db:migrate`                        |
+| Undo last migration | `npx sequelize db:migrate:undo`                   |
+| Undo all migrations | `npx sequelize db:migrate:undo:all`               |

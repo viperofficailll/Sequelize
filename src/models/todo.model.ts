@@ -5,32 +5,30 @@ export const Todos = sequelize.define(
   "Todos",
   {
     // Model attributes are defined here
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
     Title: {
       type: DataTypes.STRING,
       allowNull: false,
     },
     Description: {
       type: DataTypes.STRING,
+      allowNull: true,
     },
     IsCompleted: {
       type: DataTypes.BOOLEAN,
+      allowNull: true,
       defaultValue: false,
-    },
-    DateCreated: {
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-    DateUpdated: {
-      type: DataTypes.DATE,
-      allowNull: false,
     },
   },
   {
-    // Other model options go here
-    // freezeTableName: true,
-    tableName: "Todos",
+    tableName: "TodosfromMigration",
+    timestamps: true,
+    createdAt: "CreatedAt",
+    updatedAt: "UpdatedAt",
   },
 );
-
-// `sequelize.define` also returns the model
-console.log(Todos === sequelize.models.Todos); // true

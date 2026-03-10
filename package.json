@@ -13,10 +13,14 @@
   "type": "module",
   "dependencies": {
     "@types/express": "^5.0.6",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "mysql2": "^3.19.1",
     "sequelize": "^6.37.8",
     "typescript": "^5.9.3",
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^6.6.5"
   }
 }

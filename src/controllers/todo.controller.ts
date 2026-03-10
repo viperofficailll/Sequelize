@@ -32,8 +32,6 @@ export const addTodo = async (req: Request, res: Response) => {
     const newTodo = await Todos.create({
       Title,
       Description,
-      DateCreated: new Date(),
-      DateUpdated: new Date(),
     });
 
     ApiResponse.created(newTodo, "Todo created successfully").send(res);
@@ -115,7 +113,6 @@ export const updateTodobyid = async (req: Request, res: Response) => {
       ...(Title !== undefined && { Title }),
       ...(Description !== undefined && { Description }),
       ...(IsCompleted !== undefined && { IsCompleted }),
-      DateUpdated: new Date(),
     });
 
     ApiResponse.ok(todo, "Todo updated successfully").send(res);
