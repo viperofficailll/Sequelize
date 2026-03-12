@@ -20,6 +20,17 @@ export class ApiError extends Error {
     Error.captureStackTrace(this, this.constructor);
   }
 
+  // Ensure message is included in JSON serialization
+  toJSON() {
+    return {
+      statusCode: this.statusCode,
+      message: this.message,
+      errors: this.errors,
+      success: this.success,
+      isOperational: this.isOperational,
+    };
+  }
+
   // Static factory methods for common errors
   static badRequest(
     message: string = "Bad request",
