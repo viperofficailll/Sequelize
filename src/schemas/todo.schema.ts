@@ -20,7 +20,7 @@ export const updateTodoSchema = z.object({
 
 // Schema for todo ID parameter
 export const todoIdSchema = z.object({
-  id: z.string().regex(/^\d+$/, "ID must be a valid number"),
+  id: z.string().regex(/^[1-9]\d*$/, "ID must be a valid positive number"),
 });
 
 // Type exports

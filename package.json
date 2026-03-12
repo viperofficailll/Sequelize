@@ -7,6 +7,8 @@
     "test": "cross-env NODE_ENV=test vitest --run",
     "test:watch": "cross-env NODE_ENV=test vitest",
     "test:post": "cross-env NODE_ENV=test vitest run tests/post-todo/post.test.ts",
+    "test:update": "cross-env NODE_ENV=test vitest run tests/update-todo/update.test.ts",
+    "test:delete": "cross-env NODE_ENV=test vitest run tests/delete-todo/delete.test.ts",
     "dev": "tsc -b && node --env-file=config.env dist/server.js",
     "build": "tsc -b"
   },
