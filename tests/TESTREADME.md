@@ -130,8 +130,9 @@ npm run test:watch
 
 #### Running Specific Test Files
 ```bash
-npm run test:post
-# Runs only POST todo tests
+npm run test:post    # Runs only POST todo tests
+npm run test:update  # Runs only UPDATE todo tests  
+npm run test:delete  # Runs only DELETE todo tests
 ```
 
 ### 🗄️ Database Setup
@@ -200,7 +201,9 @@ describe("Test the post Todos functionality", () => {
 
 ### 🎯 Complete Test Suite Example
 
-Our todo API tests cover multiple scenarios:
+Our todo API tests cover multiple scenarios for all CRUD operations:
+
+#### 1. POST - Successful Creation Test
 
 #### 1. Successful Creation Test
 ```typescript
@@ -228,7 +231,7 @@ it("should post the todo", async () => {
 });
 ```
 
-#### 2. Validation Error Tests
+#### 2. POST - Validation Error Tests
 ```typescript
 it("should return validation error for missing Title", async () => {
   const endpoint = "/api/v1/todo";
@@ -262,7 +265,7 @@ it("should return validation error for empty Title", async () => {
 });
 ```
 
-#### 3. Optional Fields Test
+#### 3. POST - Optional Fields Test
 ```typescript
 it("should create todo with only Title (Description optional)", async () => {
   const endpoint = "/api/v1/todo";
@@ -281,7 +284,203 @@ it("should create todo with only Title (Description optional)", async () => {
 });
 ```
 
-### 🔍 Response Structure Testing
+#### 4. UPDATE - Successful Update Test
+```typescript
+it("should update a todo successfully", async () => {
+  // arrange
+  createdTodoId = await createTestTodo();
+  const endpoint = `/api/v1/todo/${createdTodoId}`;
+  const updatePayload = {
+    Title: "Updated Todo Title",
+    Description: "Updated description",
+    IsCompleted: true,
+  };
+
+  // act
+  const res = await request(App).put(endpoint).send(updatePayload);
+
+  // assert
+  // 1. Check status
+  expect(res.status).toBe(200);
+  
+  // 2. Check message
+  expect(res.body.message).toBe("Todo updated successfully");
+  
+  // 3. Check success
+  expect(res.body.success).toBe(true);
+  
+  // Additional assertions
+  expect(res.body.data.Title).toBe(updatePayload.Title);
+  expect(res.body.data.Description).toBe(updatePayload.Description);
+  expect(res.body.data.IsCompleted).toBe(updatePayload.IsCompleted);
+});
+```
+
+#### 5. UPDATE - Partial Update Test
+```typescript
+it("should update only Title field", async () => {
+  // arrange
+  createdTodoId = await createTestTodo();
+  const endpoint = `/api/v1/todo/${createdTodoId}`;
+  const updatePayload = {
+    Title: "Only Title Updated",
+  };
+
+  // act
+  const res = await request(App).put(endpoint).send(updatePayload);
+
+  // assert
+  expect(res.status).toBe(200);
+  expect(res.body.message).toBe("Todo updated successfully");
+  expect(res.body.success).toBe(true);
+  expect(res.body.data.Title).toBe(updatePayload.Title);
+  expect(res.body.data.Description).toBe("This todo will be updated"); // Original value
+});
+```
+
+#### 6. UPDATE - Validation Error Test
+```typescript
+it("should return validation error for empty Title", async () => {
+  // arrange
+  createdTodoId = await createTestTodo();
+  const endpoint = `/api/v1/todo/${createdTodoId}`;
+  const updatePayload = {
+    Title: "",
+  };
+
+  // act
+  const res = await request(App).put(endpoint).send(updatePayload);
+
+  // assert
+  expect(res.status).toBe(422);
+  expect(res.body.message).toBe("Validation failed");
+  expect(res.body.success).toBe(false);
+  expect(res.body.errors).toBeDefined();
+});
+```
+
+#### 7. DELETE - Successful Deletion Test
+```typescript
+it("should delete a todo successfully", async () => {
+  // arrange
+  createdTodoId = await createTestTodo();
+  const endpoint = `/api/v1/todo/${createdTodoId}`;
+
+  // act
+  const res = await request(App).delete(endpoint);
+
+  // assert
+  // 1. Check status
+  expect(res.status).toBe(200);
+  
+  // 2. Check message
+  expect(res.body.message).toBe("Todo deleted successfully");
+  
+  // 3. Check success
+  expect(res.body.success).toBe(true);
+  
+  // Additional assertions
+  expect(res.body.data).toBeNull();
+});
+```
+
+#### 8. DELETE - Verification Test
+```typescript
+it("should verify todo is actually deleted", async () => {
+  // arrange
+  createdTodoId = await createTestTodo();
+  const endpoint = `/api/v1/todo/${createdTodoId}`;
+
+  // act - delete the todo
+  await request(App).delete(endpoint);
+
+  // act - try to get the deleted todo
+  const getRes = await request(App).get(endpoint);
+
+  // assert - should return 404
+  expect(getRes.status).toBe(404);
+  expect(getRes.body.message).toBe("Todo not found");
+  expect(getRes.body.success).toBe(false);
+});
+```
+
+#### 9. DELETE - Error Handling Test
+```typescript
+it("should return 404 for non-existent todo", async () => {
+  // arrange
+  const nonExistentId = 99999;
+  const endpoint = `/api/v1/todo/${nonExistentId}`;
+
+  // act
+  const res = await request(App).delete(endpoint);
+
+  // assert
+  expect(res.status).toBe(404);
+  expect(res.body.message).toBe("Todo not found");
+  expect(res.body.success).toBe(false);
+});
+```
+
+### 🔧 Test Helper Functions
+
+Our tests use helper functions to reduce code duplication and improve maintainability:
+
+#### Creating Test Data
+```typescript
+// Helper function to create a todo for testing
+const createTestTodo = async () => {
+  const response = await request(App)
+    .post("/api/v1/todo")
+    .send({
+      Title: "Test Todo for Update",
+      Description: "This todo will be updated",
+    });
+  return response.body.data.id;
+};
+```
+
+#### Usage in Tests
+```typescript
+describe("Test the PUT Todos functionality", () => {
+  let createdTodoId: number;
+
+  it("should update a todo successfully", async () => {
+    // arrange - use helper to create test data
+    createdTodoId = await createTestTodo();
+    const endpoint = `/api/v1/todo/${createdTodoId}`;
+    
+    // ... rest of test
+  });
+});
+```
+
+### 🧪 Test Coverage Summary
+
+Our comprehensive test suite covers:
+
+#### POST Todos (4 tests)
+- ✅ Successful creation with all fields
+- ✅ Successful creation with only required fields
+- ✅ Validation error for missing Title
+- ✅ Validation error for empty Title
+
+#### UPDATE Todos (8 tests)
+- ✅ Successful full update
+- ✅ Partial updates (Title only, IsCompleted only)
+- ✅ Empty payload handling
+- ✅ Validation errors (empty Title, invalid types)
+- ✅ Error handling (404 for non-existent, 422 for invalid ID)
+
+#### DELETE Todos (8 tests)
+- ✅ Successful deletion
+- ✅ Verification of actual deletion
+- ✅ Multiple deletion attempts
+- ✅ Error handling (404 for non-existent, 422 for invalid ID)
+- ✅ Edge cases (zero ID, negative ID, non-numeric ID)
+
+**Total: 20 tests covering all CRUD operations**
+
+---
 
 Our API follows a consistent response structure:
 
@@ -644,9 +843,11 @@ expect(obj).toMatchObject({id: 1})     // Partial match
 npm test
 ```
 
-### Specific Test File
+### Specific Test Files
 ```bash
-npm run test:post
+npm run test:post    # POST todo tests
+npm run test:update  # UPDATE todo tests
+npm run test:delete  # DELETE todo tests
 ```
 
 ### Watch Mode (Re-run on file changes)
@@ -709,14 +910,17 @@ npx vitest --coverage
 This testing setup provides:
 
 - ✅ **Isolated test environment** with separate database
-- ✅ **Comprehensive API testing** with Supertest
+- ✅ **Comprehensive API testing** with Supertest for all CRUD operations
 - ✅ **Validation testing** with Zod schemas
 - ✅ **Structured test organization** with AAA pattern
-- ✅ **Multiple test scenarios** (success, validation, edge cases)
-- ✅ **Easy test execution** with npm scripts
+- ✅ **Multiple test scenarios** (success, validation, edge cases, error handling)
+- ✅ **Easy test execution** with npm scripts for individual test suites
 - ✅ **Environment configuration** for development and testing
+- ✅ **Helper functions** for test data creation and code reuse
 
-Your tests now validate the three key requirements:
-1. **Status** - HTTP status codes (201, 422, etc.)
-2. **Message** - Response messages ("Todo created successfully", "Validation failed")
+Your tests now validate the three key requirements across all operations:
+1. **Status** - HTTP status codes (200, 201, 404, 422, etc.)
+2. **Message** - Response messages ("Todo created successfully", "Validation failed", etc.)
 3. **Success** - Boolean success indicators (true/false)
+
+**Complete test coverage**: 20 tests across POST, UPDATE, and DELETE operations ensuring robust API functionality.
